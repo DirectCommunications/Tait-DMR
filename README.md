@@ -1,5 +1,7 @@
 # tait-dmr
 
+[![Clojars Project](http://clojars.org/au.com.directcommunications/tait-dmr/latest-version.svg)](http://clojars.org/au.com.directcommunications/tait-dmr)
+
 A library for common functions for dealing with the Tait DMR node.
 Specifically the JSON structures from the DMR node.
 
