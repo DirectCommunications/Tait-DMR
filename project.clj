@@ -1,4 +1,4 @@
-(defproject au.com.directcommunications/tait-dmr "0.1.0-SNAPSHOT"
+(defproject au.com.directcommunications/tait-dmr "0.1.1-SNAPSHOT"
   :description "Functions related to handling specifics of the Tait DMR."
   :url "http://example.com/FIXME"
   :license {:name "MIT License"
