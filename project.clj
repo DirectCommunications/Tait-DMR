@@ -5,7 +5,6 @@
             :url "https://opensource.org/licenses/MIT"
             :year 2017
             :key "mit"}
-  :dependencies [[org.clojure/clojure "1.7.0"]
-                 [prismatic/schema "1.0.3"]
+  :dependencies [[org.clojure/clojure "1.9.0-alpha14"]
                  [clj-time "0.11.0"]]
   :profiles {:dev {:dependencies [[org.clojure/test.check "0.9.0"]]}})

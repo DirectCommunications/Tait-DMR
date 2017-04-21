@@ -4,42 +4,52 @@
 ;; the data for representing a vehicle unit.
 
 (ns tait-dmr.unit
-  (:require [schema.core :as s])
+  (:require [clojure.spec :as s]
+            [clojure.spec.gen :as gen]
+            [clj-time.coerce])
   (:import org.joda.time.DateTime))
 
-(s/defschema ErrorFields
-  "A schema for defining the optional errors that might happen."
-  {(s/optional-key :errors) {:last-response-time [s/Str]}})
+(def fleet-address-regex #"[0-9]{3}-[0-9]{4}-[0-9]{3}")
 
-(s/defschema FleetAddress
-  (s/constrained String #(re-find #"[0-9]{3}-[0-9]{4}-[0-9]{3}" %)))
+(def fleet-number-digits (gen/choose 0 9))
 
-(s/defschema Latitude
-  (s/constrained Double #(and (<= % 90) (>= % -90))))
+(def three-nat-gen
+  (gen/fmap #(apply str %) (gen/tuple  fleet-number-digits
+                                       fleet-number-digits
+                                       fleet-number-digits)))
 
-(s/defschema Longitude
-  (s/constrained Double #(and (<= % 180) (>= % -180))))
+(def four-nat-gen
+  (gen/fmap #(apply str %) (gen/tuple fleet-number-digits
+                                      fleet-number-digits
+                                      fleet-number-digits
+                                      fleet-number-digits)))
 
-(s/defschema Speed
-  (s/constrained s/Int #(and (<= % 410) (>= % 0))))
+(def fleet-number-gen
+  (gen/fmap #(apply str %) (gen/fmap #(interpose "-" %)
+                                     (gen/tuple three-nat-gen
+                                                four-nat-gen
+                                                three-nat-gen))))
 
-(s/defschema Address
-   (s/constrained s/Int pos?))
+(s/def ::fleet-address (s/with-gen (s/and string?
+                                          #(re-matches fleet-address-regex %))
+                         (fn [] fleet-number-gen)))
 
-(s/defschema BaseDmrUnit
-  "A schema for the expected final result of processing the raw units
-  from the DMR node, the format as follows:"
-  ;; Top speed of 410, we don't expect to be tracking anything faster
-  ;; than a Veyron.
-  {:fleet-address FleetAddress
-   :latitude Latitude
-   :longitude Longitude
-   :speed Speed
-   :address Address
-   :last-response-time (s/maybe DateTime)})
+(s/def ::latitude (s/double-in :min -90.0 :max 90 :NaN? false :infinite? false))
+(s/def ::longitude (s/double-in :min -180.0 :max 180 :NaN? false :infinite? false))
 
-(def DmrUnit
-  (s/if #(or (nil? (:last-response-time %))
-             (string? (:last-response-time %)))
-    (merge BaseDmrUnit ErrorFields)
-    BaseDmrUnit))
+;; Top speed of 410, we don't expect to be tracking anything faster
+;; than a Veyron.
+(s/def ::speed (s/int-in 0 410))
+
+(s/def ::address (s/and int? pos?))
+
+(def date-time-generator
+  (gen/fmap clj-time.coerce/from-date
+            (s/gen (s/inst-in #inst "2000" #inst "2016"))))
+
+(s/def ::last-response-time (s/with-gen (s/nilable #(instance? DateTime %))
+                              (constantly date-time-generator)))
+
+(s/def ::dmr-unit (s/keys :req [::fleet-address ::latitude ::longitude
+                                ::speed ::address]
+                          :opt [::last-response-time]))
